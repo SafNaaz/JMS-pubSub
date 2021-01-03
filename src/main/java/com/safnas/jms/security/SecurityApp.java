@@ -14,7 +14,7 @@ import org.apache.activemq.artemis.jms.client.ActiveMQConnectionFactory;
 
 public class SecurityApp {
 
-    public static void main(String[] args) throws NamingException, JMSException {
+    public static void main(String[] args) throws NamingException, JMSException, InterruptedException {
 
         InitialContext context = new InitialContext();
         Topic topic = (Topic) context.lookup("topic/empTopic");
@@ -22,12 +22,22 @@ public class SecurityApp {
         try (ActiveMQConnectionFactory cf = new ActiveMQConnectionFactory();
                 JMSContext jmsContext = cf.createContext()) {
             
-            JMSConsumer consumer = jmsContext.createConsumer(topic);
+            jmsContext.setClientID("securityApp");
+            JMSConsumer consumer = jmsContext.createDurableConsumer(topic, "subscription1");
+            consumer.close();
+
+            Thread.sleep(10000);
+
+            consumer = jmsContext.createDurableConsumer(topic, "subscription1");
+
             Message message = consumer.receive();
 
             Employee employee = message.getBody(Employee.class);
 
             System.out.println(employee.getFirstName());
+
+            consumer.close();
+            jmsContext.unsubscribe("subscription1");
         }
 
     }
